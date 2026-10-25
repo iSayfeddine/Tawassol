@@ -41,24 +41,29 @@ button {
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 0.9fr 1.1fr;
   background:
     radial-gradient(
-      ellipse at 12% 10%,
+      ellipse at 88% 12%,
       rgba(49, 112, 177, 0.16),
-      transparent 42%
+      transparent 44%
     ),
     var(--background);
 }
 
+/* Arabic introduction — right column */
 .brand-panel {
+  grid-column: 2;
+  grid-row: 1;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px clamp(28px, 7vw, 104px);
-  border-right: 1px solid var(--border);
+  min-width: 0;
+  padding: 52px clamp(32px, 5vw, 76px);
+  border-left: 1px solid var(--border);
   overflow: hidden;
+  text-align: right;
 }
 
 .brand-panel::after {
@@ -68,33 +73,27 @@ button {
   height: 360px;
   border: 1px solid rgba(120, 186, 255, 0.08);
   border-radius: 50%;
-  right: -130px;
-  bottom: -150px;
+  left: -150px;
+  bottom: -170px;
   box-shadow:
     0 0 0 45px rgba(120, 186, 255, 0.025),
     0 0 0 90px rgba(120, 186, 255, 0.02);
   pointer-events: none;
 }
 
-/* Club branding */
 .brand {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 43px;
-  height: 43px;
-  border: 1px solid rgba(120, 186, 255, 0.45);
-  border-radius: 13px;
-  color: var(--blue-bright);
-  font-family: "Manrope", sans-serif;
-  font-size: 20px;
-  font-weight: 800;
-  background: rgba(120, 186, 255, 0.08);
+.brand-logo {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .brand-title-block {
@@ -104,48 +103,30 @@ button {
 .brand-name-ar {
   color: #ffffff;
   font-family: "Amiri", serif;
-  font-size: clamp(44px, 4.5vw, 60px);
+  font-size: clamp(38px, 3.4vw, 52px);
   font-weight: 700;
-  line-height: 1.3;
-  letter-spacing: 0;
+  line-height: 1.4;
   white-space: nowrap;
   text-align: right;
-  text-shadow: 0 2px 20px rgba(120, 186, 255, 0.08);
 }
 
 .brand-name-en {
-  margin-top: 0;
+  margin-top: 2px;
   color: #91a5bc;
   font-family: "Manrope", sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.4px;
   text-align: right;
 }
 
-.brand-name {
-  font-family: "Manrope", sans-serif;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
-.brand-subtitle {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-/* Main club introduction */
 .brand-copy {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 490px;
+  max-width: 560px;
   align-self: stretch;
-  margin: 70px 0;
+  margin: 60px 0;
 }
 
 .eyebrow {
@@ -156,49 +137,22 @@ button {
   text-transform: uppercase;
 }
 
-.brand-copy h1 {
-  margin: 24px 0 20px;
-  font-family: "Manrope", sans-serif;
-  font-size: clamp(38px, 5vw, 64px);
-  line-height: 1.1;
-  letter-spacing: -2.8px;
-}
-
-.brand-copy h1 span {
-  color: var(--blue);
-}
-
-.brand-copy p {
-  max-width: 390px;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.9;
-}
-
-.brand-footer {
-  color: #637990;
-  font-size: 12px;
-}
-
-/* Arabic typography and right-to-left layout */
 .brand-eyebrow-ar {
-  direction: rtl;
-  text-align: right;
-  letter-spacing: 0;
   font-family: "Amiri", serif;
-  font-size: 19px;
-  line-height: 1.6;
+  font-size: 20px;
+  line-height: 1.7;
+  letter-spacing: 0;
+  text-align: right;
 }
 
 .brand-headline-ar {
-  direction: rtl;
-  text-align: right;
+  margin: 24px 0 22px;
   font-family: "Amiri", serif;
-  font-size: clamp(42px, 4.4vw, 62px);
+  font-size: clamp(48px, 5vw, 70px);
   font-weight: 700;
   line-height: 1.5;
   letter-spacing: 0;
-  margin: 24px 0 20px;
+  text-align: right;
 }
 
 .brand-headline-ar .headline-white {
@@ -210,22 +164,32 @@ button {
 }
 
 .brand-description-ar {
-  direction: rtl;
-  text-align: right;
-  font-family: "Amiri", serif;
-  font-size: 21px;
-  line-height: 2;
-  font-weight: 400;
-  color: var(--muted);
-  max-width: 440px;
+  max-width: 510px;
   margin: 0 0 0 auto;
+  color: var(--muted);
+  font-family: "Amiri", serif;
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 2;
+  text-align: right;
 }
 
-/* Login form */
+.brand-footer {
+  position: relative;
+  z-index: 1;
+  color: #637990;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+}
+
+/* English sign-in — left column */
 .login-panel {
+  grid-column: 1;
+  grid-row: 1;
   display: grid;
   place-items: center;
-  padding: 40px 24px;
+  min-width: 0;
+  padding: 48px clamp(24px, 5vw, 72px);
 }
 
 .login-card {
@@ -244,7 +208,7 @@ button {
   margin: 0 0 34px;
   color: var(--muted);
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 .field-label {
@@ -317,75 +281,107 @@ button {
   text-align: center;
 }
 
-/* Mobile layout */
-@media (max-width: 760px) {
+/* Responsive layout */
+@media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: 0.95fr 1.05fr;
+  }
+
+  .brand-panel {
+    padding: 40px 28px;
+  }
+
+  .login-panel {
+    padding: 40px 28px;
+  }
+
+  .brand-logo {
+    width: 78px;
+    height: 78px;
+  }
+
+  .brand {
+    gap: 14px;
+  }
+
+  .brand-name-ar {
+    font-size: clamp(32px, 4vw, 42px);
+    white-space: normal;
+  }
+
+  .brand-headline-ar {
+    font-size: clamp(42px, 5vw, 54px);
+  }
+
+  .brand-description-ar {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 680px) {
   .login-page {
     grid-template-columns: 1fr;
   }
 
   .brand-panel {
-    min-height: 290px;
-    padding: 28px 25px;
-    border-right: none;
+    grid-column: 1;
+    grid-row: 1;
+    min-height: auto;
+    padding: 30px 24px 34px;
+    border-left: none;
     border-bottom: 1px solid var(--border);
   }
 
-  .brand {
-    gap: 15px;
+  .brand-logo {
+    width: 70px;
+    height: 70px;
   }
 
-  .brand img {
-    width: 76px !important;
-    height: 76px !important;
-    flex-shrink: 0;
+  .brand {
+    gap: 14px;
   }
 
   .brand-name-ar {
-    font-size: clamp(32px, 7vw, 44px);
+    font-size: clamp(31px, 7vw, 40px);
     white-space: normal;
   }
 
   .brand-name-en {
-    margin-top: 2px;
     font-size: 12px;
     letter-spacing: 1px;
   }
 
   .brand-copy {
-    margin: 42px 0 20px;
-  }
-
-  .brand-copy h1 {
-    margin: 14px 0;
-    font-size: 39px;
-    letter-spacing: -1.5px;
-  }
-
-  .brand-copy p {
-    font-size: 13px;
-  }
-
-  .brand-footer {
-    display: none;
+    margin: 38px 0 24px;
   }
 
   .brand-eyebrow-ar {
-    font-size: 17px;
+    font-size: 18px;
   }
 
   .brand-headline-ar {
-    font-size: clamp(36px, 8vw, 48px);
-    line-height: 1.55;
-    margin: 18px 0 14px;
+    margin: 16px 0;
+    font-size: clamp(40px, 9vw, 52px);
+    line-height: 1.5;
   }
 
   .brand-description-ar {
-    font-size: 18px;
-    line-height: 1.9;
     max-width: 100%;
+    font-size: 19px;
+    line-height: 1.9;
+  }
+
+  .brand-footer {
+    font-size: 9px;
   }
 
   .login-panel {
-    padding: 42px 25px;
+    grid-column: 1;
+    grid-row: 2;
+    padding: 38px 24px 44px;
+  }
+
+  .login-card h2 {
+    font-size: 26px;
   }
 }
