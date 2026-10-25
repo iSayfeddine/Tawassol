@@ -41,19 +41,19 @@ button {
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
+  grid-template-columns: 1.1fr 0.9fr;
   background:
     radial-gradient(
-      ellipse at 88% 12%,
+      ellipse at 12% 10%,
       rgba(49, 112, 177, 0.16),
       transparent 44%
     ),
     var(--background);
 }
 
-/* Arabic introduction — right column */
+/* Arabic club introduction — LEFT */
 .brand-panel {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   position: relative;
   display: flex;
@@ -61,7 +61,7 @@ button {
   justify-content: space-between;
   min-width: 0;
   padding: 52px clamp(32px, 5vw, 76px);
-  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   overflow: hidden;
   text-align: right;
 }
@@ -73,7 +73,7 @@ button {
   height: 360px;
   border: 1px solid rgba(120, 186, 255, 0.08);
   border-radius: 50%;
-  left: -150px;
+  right: -150px;
   bottom: -170px;
   box-shadow:
     0 0 0 45px rgba(120, 186, 255, 0.025),
@@ -182,9 +182,9 @@ button {
   letter-spacing: 1.2px;
 }
 
-/* English sign-in — left column */
+/* English sign-in form — RIGHT */
 .login-panel {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 1;
   display: grid;
   place-items: center;
@@ -281,10 +281,10 @@ button {
   text-align: center;
 }
 
-/* Responsive layout */
+/* Medium screens */
 @media (max-width: 900px) {
   .login-page {
-    grid-template-columns: 0.95fr 1.05fr;
+    grid-template-columns: 1.05fr 0.95fr;
   }
 
   .brand-panel {
@@ -318,6 +318,7 @@ button {
   }
 }
 
+/* Mobile: Arabic section first, sign-in form below */
 @media (max-width: 680px) {
   .login-page {
     grid-template-columns: 1fr;
@@ -328,7 +329,7 @@ button {
     grid-row: 1;
     min-height: auto;
     padding: 30px 24px 34px;
-    border-left: none;
+    border-right: none;
     border-bottom: 1px solid var(--border);
   }
 
