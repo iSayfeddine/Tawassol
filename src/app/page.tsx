@@ -18,7 +18,6 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -44,20 +43,22 @@ export default function LoginPage() {
           <Image
             src="/logo.png"
             alt="Tawassol Sihi logo"
-            width={54}
-            height={54}
+            width={112}
+            height={112}
             priority
             style={{
-              width: 54,
-              height: 54,
+              width: 112,
+              height: 112,
               objectFit: "contain",
               flexShrink: 0,
             }}
           />
 
-          <div>
-            <div className="brand-name">TAWASSOL</div>
-            <div className="brand-subtitle">SIHI · CLUB MANAGEMENT</div>
+          <div className="brand-title-block">
+            <div className="brand-name-ar" lang="ar" dir="rtl">
+              تواصل صحي
+            </div>
+            <div className="brand-name-en">Tawassol Sihi</div>
           </div>
         </div>
 
@@ -116,11 +117,7 @@ export default function LoginPage() {
               required
             />
 
-            <button
-              className="login-button"
-              type="submit"
-              disabled={loading}
-            >
+            <button className="login-button" type="submit" disabled={loading}>
               {loading ? "Signing in..." : "Sign in securely"}
             </button>
 
