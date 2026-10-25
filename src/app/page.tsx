@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -40,7 +41,20 @@ export default function LoginPage() {
     <main className="login-page">
       <section className="brand-panel">
         <div className="brand">
-          <div className="brand-mark">T</div>
+          <Image
+            src="/logo.png"
+            alt="Tawassol Sihi logo"
+            width={54}
+            height={54}
+            priority
+            style={{
+              width: 54,
+              height: 54,
+              objectFit: "contain",
+              flexShrink: 0,
+            }}
+          />
+
           <div>
             <div className="brand-name">TAWASSOL</div>
             <div className="brand-subtitle">SIHI · CLUB MANAGEMENT</div>
@@ -102,7 +116,11 @@ export default function LoginPage() {
               required
             />
 
-            <button className="login-button" type="submit" disabled={loading}>
+            <button
+              className="login-button"
+              type="submit"
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Sign in securely"}
             </button>
 
