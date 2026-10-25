@@ -62,7 +62,7 @@ export default function LoginPage() {
 
         <div className="brand-copy" lang="ar" dir="rtl">
           <div className="eyebrow brand-eyebrow-ar">
-            مساحة تواصل صحي
+            مساحة التواصل الصحي
           </div>
 
           <h1 className="brand-headline-ar">
