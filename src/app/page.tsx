@@ -1,0 +1,125 @@
+
+"use client";
+
+import { FormEvent, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const supabase = createClient();
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        setMessage("Sign-in failed. Check your email and password.");
+        return;
+      }
+
+      setMessage("Sign-in successful. Your dashboard is coming next.");
+    } catch {
+      setMessage("Unable to connect. Please check your configuration.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="login-page">
+      <section className="brand-panel">
+        <div className="brand">
+          <div className="brand-mark">T</div>
+          <div>
+            <div className="brand-name">TAWASSOL</div>
+            <div className="brand-subtitle">SIHI · CLUB MANAGEMENT</div>
+          </div>
+        </div>
+
+        <div className="brand-copy">
+          <div className="eyebrow">THE BUREAU WORKSPACE</div>
+          <h1>
+            Better together.
+            <br />
+            <span>Built with purpose.</span>
+          </h1>
+          <p>
+            One secure space to coordinate your team, manage members,
+            organize events, and keep track of club finances.
+          </p>
+        </div>
+
+        <div className="brand-footer">
+          TAWASSOL SIHI · PRIVATE BUREAU PLATFORM
+        </div>
+      </section>
+
+      <section className="login-panel">
+        <div className="login-card">
+          <div className="eyebrow">WELCOME BACK</div>
+          <h2>Sign in to Tawassol</h2>
+          <p className="login-description">
+            Access your bureau workspace using your authorized account.
+          </p>
+
+          <form onSubmit={handleLogin}>
+            <label className="field-label" htmlFor="email">
+              Email address
+            </label>
+            <input
+              id="email"
+              className="login-input"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="username"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+
+            <label className="field-label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              className="login-input"
+              type="password"
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+
+            <button className="login-button" type="submit" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in securely"}
+            </button>
+
+            {message && (
+              <p className="login-message" role="status">
+                {message}
+              </p>
+            )}
+          </form>
+
+          <div className="login-note">
+            Private access for authorized bureau members only.
+            <br />
+            Public registration is disabled.
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
