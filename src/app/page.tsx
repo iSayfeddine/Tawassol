@@ -56,7 +56,7 @@ export default function LoginPage() {
 
           <div className="brand-title-block">
             <div className="brand-name-ar" lang="ar" dir="rtl">
-              تواصل صحي
+              التواصل الصحي
             </div>
             <div className="brand-name-en">Tawassol Sihi</div>
           </div>
