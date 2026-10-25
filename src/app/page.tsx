@@ -38,29 +38,27 @@ export default function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="brand-panel">
-        <div className="brand">
+      {/* Arabic club introduction — right side on desktop */}
+      <section className="brand-panel" dir="rtl">
+        <header className="brand">
           <Image
             src="/logo.png"
-            alt="Tawassol Sihi logo"
-            width={112}
-            height={112}
+            alt="التواصل الصحي logo"
+            width={100}
+            height={100}
             priority
-            style={{
-              width: 112,
-              height: 112,
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
+            className="brand-logo"
           />
 
           <div className="brand-title-block">
             <div className="brand-name-ar" lang="ar" dir="rtl">
               التواصل الصحي
             </div>
-            <div className="brand-name-en">Tawassol Sihi</div>
+            <div className="brand-name-en" dir="ltr">
+              Tawassol Sihi
+            </div>
           </div>
-        </div>
+        </header>
 
         <div className="brand-copy" lang="ar" dir="rtl">
           <div className="eyebrow brand-eyebrow-ar">
@@ -74,18 +72,19 @@ export default function LoginPage() {
           </h1>
 
           <p className="brand-description-ar">
-            مساحة تجمع فريق تواصل صحي لتنظيم المبادرات والأنشطة،
+            مساحة تجمع فريق التواصل الصحي لتنظيم المبادرات والأنشطة،
             وتبادل المعرفة الطبية، وتعزيز العمل الجماعي خدمةً
             للطلبة والمجتمع.
           </p>
         </div>
 
-        <div className="brand-footer">
+        <footer className="brand-footer" dir="ltr">
           TAWASSOL SIHI · PRIVATE BUREAU PLATFORM
-        </div>
+        </footer>
       </section>
 
-      <section className="login-panel">
+      {/* English sign-in form — left side on desktop */}
+      <section className="login-panel" dir="ltr">
         <div className="login-card">
           <div className="eyebrow">WELCOME BACK</div>
           <h2>Sign in to Tawassol</h2>
