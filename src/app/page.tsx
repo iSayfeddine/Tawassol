@@ -62,16 +62,21 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="brand-copy">
-          <div className="eyebrow">THE BUREAU WORKSPACE</div>
-          <h1>
-            Better together.
+        <div className="brand-copy" lang="ar" dir="rtl">
+          <div className="eyebrow brand-eyebrow-ar">
+            مساحة تواصل صحي
+          </div>
+
+          <h1 className="brand-headline-ar">
+            <span className="headline-white">معًا نتواصل،</span>
             <br />
-            <span>Built with purpose.</span>
+            <span className="headline-blue">وبالعلم نرتقي.</span>
           </h1>
-          <p>
-            One secure space to coordinate your team, manage members,
-            organize events, and keep track of club finances.
+
+          <p className="brand-description-ar">
+            مساحة تجمع فريق تواصل صحي لتنظيم المبادرات والأنشطة،
+            وتبادل المعرفة الطبية، وتعزيز العمل الجماعي خدمةً
+            للطلبة والمجتمع.
           </p>
         </div>
 
@@ -117,7 +122,11 @@ export default function LoginPage() {
               required
             />
 
-            <button className="login-button" type="submit" disabled={loading}>
+            <button
+              className="login-button"
+              type="submit"
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Sign in securely"}
             </button>
 
