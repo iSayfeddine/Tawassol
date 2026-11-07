@@ -45,6 +45,22 @@ type MemberRow = {
   paid: boolean;
 };
 
+type MemberForm = {
+  name: string;
+  email: string;
+  phone: string;
+  notes: string;
+  points: string;
+};
+
+const emptyForm: MemberForm = {
+  name: "",
+  email: "",
+  phone: "",
+  notes: "",
+  points: "0",
+};
+
 const colors = {
   background: "#071321",
   panel: "#0d1d30",
@@ -66,13 +82,31 @@ export default function MembersPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [memberPeriod, setMemberPeriod] = useState("Checking membership period...");
+  const [success, setSuccess] = useState("");
+  const [memberPeriod, setMemberPeriod] = useState(
+    "Checking membership period..."
+  );
   const [userName, setUserName] = useState("");
+  const [roleKey, setRoleKey] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [showArchived, setShowArchived] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingMember, setEditingMember] = useState<MemberRow | null>(null);
+  const [form, setForm] = useState<MemberForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [actionMemberId, setActionMemberId] = useState("");
+
+  const canManageMembers =
+    roleKey === "president" || roleKey === "vpi_internal";
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadMembers() {
+      setLoading(true);
+      setError("");
+
       const supabase = createClient();
 
       try {
@@ -94,6 +128,10 @@ export default function MembersPage() {
 
         if (profileError || !profile) {
           throw new Error("Your bureau profile could not be found.");
+        }
+
+        if (!cancelled) {
+          setRoleKey(profile.role_key || "");
         }
 
         const { data: currentPerson } = await supabase
@@ -130,7 +168,9 @@ export default function MembersPage() {
           );
 
         if (memberError) {
-          throw new Error("Could not load members. Please check database permissions.");
+          throw new Error(
+            "Could not load members. Please check database permissions."
+          );
         }
 
         const memberList = (memberData || []) as Member[];
@@ -253,12 +293,13 @@ export default function MembersPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, refreshKey]);
 
   const filteredMembers = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return [...members]
+      .filter((member) => member.isArchived === showArchived)
       .filter((member) => {
         if (!query) return true;
 
@@ -272,17 +313,166 @@ export default function MembersPage() {
         if (a.paid !== b.paid) return a.paid ? -1 : 1;
         return a.name.localeCompare(b.name);
       });
-  }, [members, search]);
+  }, [members, search, showArchived]);
 
-  const paidCount = members.filter((member) => member.paid).length;
-  const unpaidCount = members.length - paidCount;
-  const vipCount = members.filter((member) => member.isVip).length;
+  const activeMembers = members.filter((member) => !member.isArchived);
+  const paidCount = activeMembers.filter((member) => member.paid).length;
+  const unpaidCount = activeMembers.length - paidCount;
+  const vipCount = activeMembers.filter((member) => member.isVip).length;
+  const archivedCount = members.filter((member) => member.isArchived).length;
 
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
+  }
+
+  function openAddForm() {
+    setEditingMember(null);
+    setForm(emptyForm);
+    setError("");
+    setSuccess("");
+    setShowForm(true);
+  }
+
+  function openEditForm(member: MemberRow) {
+    setEditingMember(member);
+    setForm({
+      name: member.name,
+      email: member.email,
+      phone: member.phone,
+      notes: member.notes,
+      points: String(member.points),
+    });
+    setError("");
+    setSuccess("");
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    if (saving) return;
+    setShowForm(false);
+    setEditingMember(null);
+    setForm(emptyForm);
+  }
+
+  async function handleSaveMember(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!canManageMembers) {
+      setError("You are not authorized to manage members.");
+      return;
+    }
+
+    const name = form.name.trim();
+    const points = Number(form.points);
+
+    if (!name) {
+      setError("Please enter the member's full name.");
+      return;
+    }
+
+    if (!Number.isInteger(points) || points < 0) {
+      setError("Club points must be a whole number greater than or equal to 0.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    const supabase = createClient();
+
+    try {
+      if (editingMember) {
+        const { error: updateError } = await supabase.rpc("update_member", {
+          p_member_id: editingMember.id,
+          p_full_name: name,
+          p_email: form.email.trim() || null,
+          p_phone: form.phone.trim() || null,
+          p_notes: form.notes.trim() || null,
+          p_club_points: points,
+        });
+
+        if (updateError) throw updateError;
+
+        setSuccess("Member information updated successfully.");
+      } else {
+        const { error: createError } = await supabase.rpc("create_member", {
+          p_full_name: name,
+          p_email: form.email.trim() || null,
+          p_phone: form.phone.trim() || null,
+          p_notes: form.notes.trim() || null,
+          p_club_points: points,
+        });
+
+        if (createError) throw createError;
+
+        setSuccess("Member added successfully.");
+      }
+
+      setShowForm(false);
+      setEditingMember(null);
+      setForm(emptyForm);
+      setRefreshKey((value) => value + 1);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not save the member. Please try again."
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleArchiveToggle(member: MemberRow) {
+    if (!canManageMembers) return;
+
+    const action = member.isArchived ? "restore" : "archive";
+
+    const confirmed = window.confirm(
+      member.isArchived
+        ? `Restore ${member.name} to the active members directory?`
+        : `Archive ${member.name}? Their records and history will be preserved.`
+    );
+
+    if (!confirmed) return;
+
+    setActionMemberId(member.id);
+    setError("");
+    setSuccess("");
+
+    const supabase = createClient();
+
+    try {
+      const { error: archiveError } = await supabase.rpc(
+        "set_member_archived",
+        {
+          p_member_id: member.id,
+          p_archived: !member.isArchived,
+        }
+      );
+
+      if (archiveError) throw archiveError;
+
+      setSuccess(
+        member.isArchived
+          ? `${member.name} has been restored.`
+          : `${member.name} has been archived.`
+      );
+
+      setRefreshKey((value) => value + 1);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not update the member's archive status."
+      );
+    } finally {
+      setActionMemberId("");
+    }
   }
 
   const styles = {
@@ -392,7 +582,7 @@ export default function MembersPage() {
     table: {
       width: "100%",
       borderCollapse: "collapse",
-      minWidth: 850,
+      minWidth: canManageMembers ? 1010 : 850,
       fontSize: 13,
       textAlign: "left",
     } as React.CSSProperties,
@@ -418,6 +608,23 @@ export default function MembersPage() {
       color: colors.brightBlue,
       fontSize: 11,
       whiteSpace: "nowrap",
+    } as React.CSSProperties,
+    input: {
+      width: "100%",
+      boxSizing: "border-box",
+      padding: "11px 12px",
+      borderRadius: 7,
+      border: `1px solid ${colors.border}`,
+      background: "#091a2b",
+      color: colors.text,
+      fontSize: 13,
+      outline: "none",
+    } as React.CSSProperties,
+    label: {
+      display: "block",
+      color: colors.muted,
+      fontSize: 12,
+      marginBottom: 7,
     } as React.CSSProperties,
   };
 
@@ -487,9 +694,9 @@ export default function MembersPage() {
 
         <section style={styles.stats}>
           <div style={styles.stat}>
-            <div style={styles.muted}>Total members</div>
+            <div style={styles.muted}>Total active members</div>
             <div style={{ fontSize: 27, marginTop: 9, fontWeight: 600 }}>
-              {loading ? "—" : members.length}
+              {loading ? "—" : activeMembers.length}
             </div>
           </div>
 
@@ -560,7 +767,7 @@ export default function MembersPage() {
         <div style={styles.toolbar}>
           <div>
             <h2 style={{ fontSize: 17, margin: 0, fontWeight: 600 }}>
-              Member directory
+              {showArchived ? "Archived members" : "Member directory"}
             </h2>
             <p style={{ ...styles.muted, margin: "5px 0 0" }}>
               {filteredMembers.length} member
@@ -568,14 +775,73 @@ export default function MembersPage() {
             </p>
           </div>
 
-          <input
-            type="search"
-            placeholder="Search by name, phone or email..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            style={styles.search}
-          />
+          <div
+            style={{
+              display: "flex",
+              gap: 9,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <input
+              type="search"
+              placeholder="Search by name, phone or email..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              style={styles.search}
+            />
+
+            {canManageMembers && (
+              <button
+                style={{
+                  ...styles.button,
+                  background: "#173b5c",
+                  border: `1px solid ${colors.blue}`,
+                  color: colors.brightBlue,
+                  fontWeight: 600,
+                }}
+                onClick={openAddForm}
+              >
+                + Add Member
+              </button>
+            )}
+          </div>
         </div>
+
+        {canManageMembers && (
+          <div style={{ marginBottom: 15 }}>
+            <button
+              onClick={() => {
+                setShowArchived(false);
+                setSearch("");
+              }}
+              style={{
+                ...styles.button,
+                marginRight: 8,
+                background: !showArchived ? "#17314d" : colors.panel,
+                color: !showArchived ? colors.brightBlue : colors.muted,
+                borderColor: !showArchived ? colors.blue : colors.border,
+              }}
+            >
+              Active members
+            </button>
+
+            <button
+              onClick={() => {
+                setShowArchived(true);
+                setSearch("");
+              }}
+              style={{
+                ...styles.button,
+                background: showArchived ? "#17314d" : colors.panel,
+                color: showArchived ? colors.brightBlue : colors.muted,
+                borderColor: showArchived ? colors.blue : colors.border,
+              }}
+            >
+              Archived ({archivedCount})
+            </button>
+          </div>
+        )}
 
         {error && (
           <div
@@ -590,6 +856,22 @@ export default function MembersPage() {
             }}
           >
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div
+            style={{
+              padding: 13,
+              marginBottom: 15,
+              border: "1px solid #285c49",
+              borderRadius: 8,
+              background: "#102e28",
+              color: colors.green,
+              fontSize: 13,
+            }}
+          >
+            {success}
           </div>
         )}
 
@@ -613,6 +895,9 @@ export default function MembersPage() {
                   <th style={styles.th}>Membership fee</th>
                   <th style={styles.th}>Points</th>
                   <th style={styles.th}>Notes</th>
+                  {canManageMembers && (
+                    <th style={styles.th}>Actions</th>
+                  )}
                 </tr>
               </thead>
 
@@ -723,13 +1008,61 @@ export default function MembersPage() {
                     >
                       {member.notes || "—"}
                     </td>
+
+                    {canManageMembers && (
+                      <td style={styles.td}>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 7,
+                            alignItems: "center",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <button
+                            style={{
+                              ...styles.button,
+                              padding: "7px 10px",
+                              color: colors.brightBlue,
+                            }}
+                            onClick={() => openEditForm(member)}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            disabled={actionMemberId === member.id}
+                            style={{
+                              ...styles.button,
+                              padding: "7px 10px",
+                              color: member.isArchived
+                                ? colors.green
+                                : colors.red,
+                              opacity:
+                                actionMemberId === member.id ? 0.5 : 1,
+                              cursor:
+                                actionMemberId === member.id
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
+                            onClick={() => handleArchiveToggle(member)}
+                          >
+                            {actionMemberId === member.id
+                              ? "Please wait..."
+                              : member.isArchived
+                                ? "Restore"
+                                : "Archive"}
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
 
                 {filteredMembers.length === 0 && (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={canManageMembers ? 7 : 6}
                       style={{
                         ...styles.td,
                         textAlign: "center",
@@ -737,9 +1070,11 @@ export default function MembersPage() {
                         color: colors.muted,
                       }}
                     >
-                      {members.length === 0
-                        ? "No members have been added yet."
-                        : "No members match your search."}
+                      {showArchived
+                        ? "No archived members."
+                        : members.length === 0
+                          ? "No members have been added yet."
+                          : "No members match your search."}
                     </td>
                   </tr>
                 )}
@@ -756,10 +1091,201 @@ export default function MembersPage() {
             lineHeight: 1.7,
           }}
         >
-          This directory is currently read-only. Member modifications will be
-          enabled after database permissions and audit logging are secured.
+          {canManageMembers
+            ? "You have member management access. Changes are recorded automatically in the activity history."
+            : "You have read-only access to the membership directory. Contact the President or VPI for member modifications."}
         </p>
       </main>
+
+      {showForm && canManageMembers && (
+        <div
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeForm();
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            background: "rgba(0, 0, 0, 0.72)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 18,
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 540,
+              background: colors.panel,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 12,
+              padding: 25,
+              boxShadow: "0 20px 70px rgba(0,0,0,0.4)",
+              margin: "auto",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 7,
+              }}
+            >
+              <h2 style={{ fontSize: 20, margin: 0 }}>
+                {editingMember ? "Edit Member" : "Add New Member"}
+              </h2>
+
+              <button
+                onClick={closeForm}
+                disabled={saving}
+                style={{
+                  ...styles.button,
+                  padding: "5px 10px",
+                  fontSize: 17,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <p style={{ ...styles.muted, marginBottom: 23 }}>
+              {editingMember
+                ? "Update this member's personal information."
+                : "Add a new person to the Tawassol Sihi membership database."}
+            </p>
+
+            <form onSubmit={handleSaveMember}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={styles.label}>Full name *</label>
+                <input
+                  required
+                  autoFocus
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm({ ...form, name: event.target.value })
+                  }
+                  placeholder="Enter full name"
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={styles.label}>Email address</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) =>
+                    setForm({ ...form, email: event.target.value })
+                  }
+                  placeholder="member@example.com"
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={styles.label}>Phone number</label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(event) =>
+                    setForm({ ...form, phone: event.target.value })
+                  }
+                  placeholder="+212..."
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={styles.label}>Club points</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.points}
+                  onChange={(event) =>
+                    setForm({ ...form, points: event.target.value })
+                  }
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={{ marginBottom: 22 }}>
+                <label style={styles.label}>Notes</label>
+                <textarea
+                  value={form.notes}
+                  onChange={(event) =>
+                    setForm({ ...form, notes: event.target.value })
+                  }
+                  placeholder="Additional information..."
+                  rows={4}
+                  style={{
+                    ...styles.input,
+                    resize: "vertical",
+                    fontFamily: "Arial, sans-serif",
+                  }}
+                />
+              </div>
+
+              {error && (
+                <div
+                  style={{
+                    padding: 12,
+                    marginBottom: 15,
+                    border: "1px solid #703b43",
+                    borderRadius: 7,
+                    background: "#351e29",
+                    color: "#ffaaaa",
+                    fontSize: 12,
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 9,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  disabled={saving}
+                  style={styles.button}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  style={{
+                    ...styles.button,
+                    background: "#173b5c",
+                    borderColor: colors.blue,
+                    color: colors.brightBlue,
+                    fontWeight: 600,
+                    minWidth: 125,
+                    opacity: saving ? 0.6 : 1,
+                  }}
+                >
+                  {saving
+                    ? "Saving..."
+                    : editingMember
+                      ? "Save Changes"
+                      : "Add Member"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
