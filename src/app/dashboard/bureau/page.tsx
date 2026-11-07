@@ -106,9 +106,7 @@ export default async function BureauPage() {
 
           <div style={styles.activeNav}>◇　Bureau</div>
 
-          <Link href="/dashboard/members" style={styles.disabledNav}>
-            ♧　Members
-          </Link>
+          <div style={styles.disabledNav}>♧　Members</div>
           <div style={styles.disabledNav}>▦　Events</div>
           <div style={styles.disabledNav}>◈　Treasury</div>
           <div style={styles.disabledNav}>↻　Activity History</div>
