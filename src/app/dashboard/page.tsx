@@ -1,5 +1,7 @@
+
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 const roleLabels: Record<string, string> = {
@@ -117,6 +119,44 @@ export default async function DashboardPage() {
     },
   ];
 
+  const modules = [
+    {
+      number: "01",
+      title: "Bureau management",
+      description: "Official team and responsibilities",
+      href: "/dashboard/bureau",
+      active: true,
+    },
+    {
+      number: "02",
+      title: "Member database",
+      description: "Member information and membership status",
+      href: "/dashboard/members",
+      active: true,
+    },
+    {
+      number: "03",
+      title: "Events management",
+      description: "Activities, attendance and participants",
+      href: null,
+      active: false,
+    },
+    {
+      number: "04",
+      title: "Treasury",
+      description: "Membership fees and financial records",
+      href: null,
+      active: false,
+    },
+    {
+      number: "05",
+      title: "Activity history",
+      description: "Changes and administrative actions",
+      href: null,
+      active: false,
+    },
+  ];
+
   return (
     <main style={styles.page}>
       <header style={styles.header}>
@@ -147,24 +187,22 @@ export default async function DashboardPage() {
         <aside style={styles.sidebar}>
           <div style={styles.sidebarLabel}>WORKSPACE</div>
 
-          <div style={styles.activeNav}>
+          <Link href="/dashboard" style={styles.activeNav}>
             <span>◫</span>
             Dashboard
-          </div>
+          </Link>
 
           <div style={styles.sidebarLabel}>MANAGEMENT</div>
 
-          <div style={styles.navItem}>
+          <Link href="/dashboard/bureau" style={styles.navLink}>
             <span>◇</span>
             Bureau
-            <span style={styles.comingSoon}>Soon</span>
-          </div>
+          </Link>
 
-          <div style={styles.navItem}>
+          <Link href="/dashboard/members" style={styles.navLink}>
             <span>♧</span>
             Members
-            <span style={styles.comingSoon}>Soon</span>
-          </div>
+          </Link>
 
           <div style={styles.navItem}>
             <span>▦</span>
@@ -239,24 +277,44 @@ export default async function DashboardPage() {
           </div>
 
           <div style={styles.modulesGrid}>
-            {[
-              ["01", "Bureau management", "Official team and responsibilities"],
-              ["02", "Member database", "Member information and membership status"],
-              ["03", "Events management", "Activities, attendance and participants"],
-              ["04", "Treasury", "Membership fees and financial records"],
-              ["05", "Activity history", "Changes and administrative actions"],
-            ].map(([number, title, description]) => (
-              <div key={number} style={styles.moduleRow}>
-                <span style={styles.moduleNumber}>{number}</span>
+            {modules.map((module) => {
+              const content = (
+                <>
+                  <span style={styles.moduleNumber}>{module.number}</span>
 
-                <div style={styles.moduleText}>
-                  <div style={styles.moduleTitle}>{title}</div>
-                  <div style={styles.moduleDescription}>{description}</div>
+                  <div style={styles.moduleText}>
+                    <div style={styles.moduleTitle}>{module.title}</div>
+                    <div style={styles.moduleDescription}>
+                      {module.description}
+                    </div>
+                  </div>
+
+                  <span
+                    style={
+                      module.active
+                        ? styles.moduleAvailable
+                        : styles.moduleStatus
+                    }
+                  >
+                    {module.active ? "OPEN MODULE ↗" : "IN DEVELOPMENT"}
+                  </span>
+                </>
+              );
+
+              return module.active && module.href ? (
+                <Link
+                  key={module.number}
+                  href={module.href}
+                  style={styles.moduleLink}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div key={module.number} style={styles.moduleRow}>
+                  {content}
                 </div>
-
-                <span style={styles.moduleStatus}>IN DEVELOPMENT</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <footer style={styles.footer}>
@@ -342,6 +400,17 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#a6d4ff",
     fontSize: "13px",
     fontWeight: 600,
+    textDecoration: "none",
+  },
+  navLink: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "13px 12px",
+    color: "#91a5bc",
+    fontSize: "12px",
+    textDecoration: "none",
+    borderRadius: "7px",
   },
   navItem: {
     display: "flex",
@@ -480,6 +549,16 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "19px 12px",
     borderBottom: "1px solid rgba(164,196,229,0.13)",
   },
+  moduleLink: {
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    padding: "19px 12px",
+    borderBottom: "1px solid rgba(164,196,229,0.13)",
+    textDecoration: "none",
+    color: "inherit",
+    cursor: "pointer",
+  },
   moduleNumber: {
     color: "#78baff",
     fontSize: "11px",
@@ -500,6 +579,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   moduleStatus: {
     color: "#91a5bc",
+    fontSize: "9px",
+    letterSpacing: "1px",
+  },
+  moduleAvailable: {
+    color: "#78baff",
     fontSize: "9px",
     letterSpacing: "1px",
   },
