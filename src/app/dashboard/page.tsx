@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 
 const roleLabels: Record<string, string> = {
@@ -19,7 +20,6 @@ const roleLabels: Record<string, string> = {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Verify the authenticated user on the server
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -28,7 +28,6 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  // Retrieve the user's bureau profile
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("person_id, role_key")
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
     );
   }
 
-  // Retrieve the person's name
   const { data: person } = await supabase
     .from("people")
     .select("full_name")
@@ -62,9 +60,20 @@ export default async function DashboardPage() {
   return (
     <main style={styles.page}>
       <header style={styles.header}>
-        <div>
-          <div style={styles.brandArabic}>التواصل الصحي</div>
-          <div style={styles.brandEnglish}>TAWASSOL SIHI</div>
+        <div style={styles.brand}>
+          <Image
+            src="/logo.png"
+            alt="Tawassol Sihi Logo"
+            width={58}
+            height={58}
+            priority
+            style={styles.logo}
+          />
+
+          <div>
+            <div style={styles.brandArabic}>التواصل الصحي</div>
+            <div style={styles.brandEnglish}>TAWASSOL SIHI</div>
+          </div>
         </div>
 
         <div style={styles.privateLabel}>PRIVATE BUREAU PLATFORM</div>
@@ -114,6 +123,16 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     justifyContent: "space-between",
     gap: "20px",
+  },
+  brand: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+  },
+  logo: {
+    width: "58px",
+    height: "58px",
+    objectFit: "contain",
   },
   brandArabic: {
     fontSize: "27px",
