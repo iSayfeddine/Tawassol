@@ -97,6 +97,13 @@ export default function MembersPage() {
   const [saving, setSaving] = useState(false);
   const [actionMemberId, setActionMemberId] = useState("");
 
+  const [skillCatalogue, setSkillCatalogue] = useState<Skill[]>([]);
+  const [selectedSkillsMember, setSelectedSkillsMember] =
+    useState<MemberRow | null>(null);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+  const [savingSkills, setSavingSkills] = useState(false);
+
   const canManageMembers =
     roleKey === "president" || roleKey === "vpi_internal";
 
@@ -214,6 +221,10 @@ export default function MembersPage() {
           member_id: string;
           skill_id: number;
         }[];
+
+        if (!cancelled) {
+          setSkillCatalogue(skills);
+        }
 
         if (period && memberIds.length > 0) {
           const { data: payments, error: paymentError } = await supabase
@@ -475,6 +486,77 @@ export default function MembersPage() {
     }
   }
 
+  async function openSkillManager(member: MemberRow) {
+    if (!canManageMembers) return;
+
+    setSelectedSkillsMember(member);
+    setSelectedSkillIds([]);
+    setLoadingSkills(true);
+    setError("");
+    setSuccess("");
+
+    const supabase = createClient();
+
+    const { data, error: skillsError } = await supabase
+      .from("member_skills")
+      .select("skill_id")
+      .eq("member_id", member.id);
+
+    if (skillsError) {
+      setError("Could not load this member's skills.");
+      setSelectedSkillsMember(null);
+      setLoadingSkills(false);
+      return;
+    }
+
+    setSelectedSkillIds((data || []).map((item) => item.skill_id));
+    setLoadingSkills(false);
+  }
+
+  function closeSkillManager() {
+    if (savingSkills) return;
+    setSelectedSkillsMember(null);
+    setSelectedSkillIds([]);
+  }
+
+  function toggleSkill(skillId: number) {
+    setSelectedSkillIds((current) =>
+      current.includes(skillId)
+        ? current.filter((id) => id !== skillId)
+        : [...current, skillId]
+    );
+  }
+
+  async function handleSaveSkills() {
+    if (!canManageMembers || !selectedSkillsMember) return;
+
+    setSavingSkills(true);
+    setError("");
+    setSuccess("");
+
+    const supabase = createClient();
+
+    try {
+      const { error: saveError } = await supabase.rpc("set_member_skills", {
+        p_member_id: selectedSkillsMember.id,
+        p_skill_ids: selectedSkillIds,
+      });
+
+      if (saveError) throw saveError;
+
+      setSuccess(`Skills updated for ${selectedSkillsMember.name}.`);
+      setSelectedSkillsMember(null);
+      setSelectedSkillIds([]);
+      setRefreshKey((value) => value + 1);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not update member skills."
+      );
+    } finally {
+      setSavingSkills(false);
+    }
+  }
+
   const styles = {
     page: {
       minHeight: "100vh",
@@ -519,103 +601,63 @@ export default function MembersPage() {
       display: "flex",
       gap: 8,
       flexWrap: "wrap",
-      marginBottom: 30,
+      marginBottom: 26,
     } as React.CSSProperties,
     navLink: {
-      color: colors.muted,
       textDecoration: "none",
-      padding: "9px 14px",
-      borderRadius: 7,
-      fontSize: 13,
-    } as React.CSSProperties,
-    activeNav: {
-      color: colors.brightBlue,
-      background: "#17314d",
+      color: colors.muted,
+      padding: "8px 13px",
       border: `1px solid ${colors.border}`,
+      borderRadius: 7,
+      fontSize: 12,
     } as React.CSSProperties,
-    heading: {
+    title: {
       fontSize: 27,
-      fontWeight: 600,
-      margin: "0 0 8px",
-      letterSpacing: "-0.5px",
+      fontWeight: 700,
+      margin: "0 0 6px",
     } as React.CSSProperties,
-    muted: {
+    subtitle: {
       color: colors.muted,
       fontSize: 13,
+      margin: 0,
     } as React.CSSProperties,
-    stats: {
+    statGrid: {
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+      gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
       gap: 12,
-      margin: "26px 0",
+      margin: "25px 0",
     } as React.CSSProperties,
     stat: {
       background: colors.panel,
       border: `1px solid ${colors.border}`,
       borderRadius: 9,
-      padding: "17px 19px",
+      padding: 16,
+    } as React.CSSProperties,
+    statLabel: {
+      color: colors.muted,
+      fontSize: 11,
+      marginBottom: 9,
+    } as React.CSSProperties,
+    statValue: {
+      fontSize: 25,
+      fontWeight: 700,
+      color: colors.brightBlue,
     } as React.CSSProperties,
     toolbar: {
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      gap: 15,
+      gap: 12,
       flexWrap: "wrap",
-      margin: "25px 0 15px",
-    } as React.CSSProperties,
-    search: {
-      background: colors.panel,
-      border: `1px solid ${colors.border}`,
-      borderRadius: 7,
-      padding: "11px 14px",
-      color: colors.text,
-      width: "min(100%, 340px)",
-      fontSize: 13,
-      outline: "none",
-    } as React.CSSProperties,
-    tableContainer: {
-      overflowX: "auto",
-      border: `1px solid ${colors.border}`,
-      borderRadius: 9,
-      background: colors.panel,
-    } as React.CSSProperties,
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      minWidth: canManageMembers ? 1010 : 850,
-      fontSize: 13,
-      textAlign: "left",
-    } as React.CSSProperties,
-    th: {
-      padding: "14px 16px",
-      color: colors.muted,
-      fontWeight: 500,
-      borderBottom: `1px solid ${colors.border}`,
-      whiteSpace: "nowrap",
-      background: "#102239",
-    } as React.CSSProperties,
-    td: {
-      padding: "14px 16px",
-      borderBottom: `1px solid ${colors.border}`,
-      verticalAlign: "middle",
-    } as React.CSSProperties,
-    tag: {
-      display: "inline-block",
-      padding: "4px 7px",
-      margin: "2px 3px 2px 0",
-      borderRadius: 5,
-      background: "#18344f",
-      color: colors.brightBlue,
-      fontSize: 11,
-      whiteSpace: "nowrap",
+      marginBottom: 15,
     } as React.CSSProperties,
     input: {
       width: "100%",
       boxSizing: "border-box",
-      padding: "11px 12px",
-      borderRadius: 7,
-      border: `1px solid ${colors.border}`,
       background: "#091a2b",
+      border: `1px solid ${colors.border}`,
+      borderRadius: 7,
+      padding: "11px 12px",
       color: colors.text,
       fontSize: 13,
       outline: "none",
@@ -625,6 +667,45 @@ export default function MembersPage() {
       color: colors.muted,
       fontSize: 12,
       marginBottom: 7,
+    } as React.CSSProperties,
+    tableContainer: {
+      overflowX: "auto",
+      background: colors.panel,
+      border: `1px solid ${colors.border}`,
+      borderRadius: 9,
+    } as React.CSSProperties,
+    table: {
+      width: "100%",
+      borderCollapse: "collapse",
+      textAlign: "left",
+      fontSize: 12,
+    } as React.CSSProperties,
+    th: {
+      padding: "13px 14px",
+      color: colors.muted,
+      fontWeight: 600,
+      borderBottom: `1px solid ${colors.border}`,
+      whiteSpace: "nowrap",
+      background: "#0a1929",
+    } as React.CSSProperties,
+    td: {
+      padding: "13px 14px",
+      borderBottom: `1px solid ${colors.border}`,
+      verticalAlign: "middle",
+    } as React.CSSProperties,
+    tag: {
+      display: "inline-block",
+      padding: "5px 8px",
+      margin: "2px 4px 2px 0",
+      borderRadius: 5,
+      background: "#17314d",
+      color: colors.brightBlue,
+      fontSize: 10,
+      whiteSpace: "nowrap",
+    } as React.CSSProperties,
+    muted: {
+      color: colors.muted,
+      fontSize: 12,
     } as React.CSSProperties,
   };
 
@@ -640,7 +721,7 @@ export default function MembersPage() {
             style={styles.logo}
           />
           <div>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>
               التواصل الصحي
             </div>
             <div style={{ color: colors.muted, fontSize: 11 }}>
@@ -649,11 +730,11 @@ export default function MembersPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 15 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
           <span style={{ color: colors.muted, fontSize: 12 }}>
             {userName}
           </span>
-          <button style={styles.button} onClick={handleSignOut}>
+          <button onClick={handleSignOut} style={styles.button}>
             Sign out
           </button>
         </div>
@@ -669,171 +750,103 @@ export default function MembersPage() {
           </Link>
           <Link
             href="/dashboard/members"
-            style={{ ...styles.navLink, ...styles.activeNav }}
+            style={{
+              ...styles.navLink,
+              color: colors.brightBlue,
+              borderColor: colors.blue,
+              background: "#102943",
+            }}
           >
             Members
           </Link>
-          <span style={{ ...styles.navLink, opacity: 0.45 }}>
-            Events · Soon
-          </span>
-          <span style={{ ...styles.navLink, opacity: 0.45 }}>
-            Treasury · Soon
-          </span>
-          <span style={{ ...styles.navLink, opacity: 0.45 }}>
-            Activity History · Soon
-          </span>
         </nav>
-
-        <div>
-          <div style={styles.muted}>CLUB DATABASE</div>
-          <h1 style={styles.heading}>Members</h1>
-          <p style={styles.muted}>
-            Manage and consult the Tawassol Sihi membership database.
-          </p>
-        </div>
-
-        <section style={styles.stats}>
-          <div style={styles.stat}>
-            <div style={styles.muted}>Total active members</div>
-            <div style={{ fontSize: 27, marginTop: 9, fontWeight: 600 }}>
-              {loading ? "—" : activeMembers.length}
-            </div>
-          </div>
-
-          <div style={styles.stat}>
-            <div style={styles.muted}>Paid members</div>
-            <div
-              style={{
-                fontSize: 27,
-                marginTop: 9,
-                fontWeight: 600,
-                color: colors.green,
-              }}
-            >
-              {loading ? "—" : paidCount}
-            </div>
-          </div>
-
-          <div style={styles.stat}>
-            <div style={styles.muted}>Unpaid members</div>
-            <div
-              style={{
-                fontSize: 27,
-                marginTop: 9,
-                fontWeight: 600,
-                color: colors.gold,
-              }}
-            >
-              {loading ? "—" : unpaidCount}
-            </div>
-          </div>
-
-          <div style={styles.stat}>
-            <div style={styles.muted}>VIP members</div>
-            <div
-              style={{
-                fontSize: 27,
-                marginTop: 9,
-                fontWeight: 600,
-                color: colors.gold,
-              }}
-            >
-              {loading ? "—" : vipCount}
-            </div>
-          </div>
-        </section>
 
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
+            alignItems: "flex-end",
+            gap: 15,
             flexWrap: "wrap",
           }}
         >
-          <div style={styles.muted}>
-            Membership period:{" "}
-            <span style={{ color: colors.brightBlue }}>
-              {memberPeriod}
-            </span>
+          <div>
+            <h1 style={styles.title}>Members</h1>
+            <p style={styles.subtitle}>
+              Membership directory · {memberPeriod}
+            </p>
           </div>
 
-          <div style={{ color: colors.muted, fontSize: 11 }}>
-            Paid members are displayed first
+          {canManageMembers && (
+            <button
+              onClick={openAddForm}
+              style={{
+                ...styles.button,
+                background: "#173b5c",
+                borderColor: colors.blue,
+                color: colors.brightBlue,
+                fontWeight: 600,
+              }}
+            >
+              + Add Member
+            </button>
+          )}
+        </div>
+
+        <div style={styles.statGrid}>
+          <div style={styles.stat}>
+            <div style={styles.statLabel}>Active Members</div>
+            <div style={styles.statValue}>{activeMembers.length}</div>
+          </div>
+          <div style={styles.stat}>
+            <div style={styles.statLabel}>Paid</div>
+            <div style={{ ...styles.statValue, color: colors.green }}>
+              {paidCount}
+            </div>
+          </div>
+          <div style={styles.stat}>
+            <div style={styles.statLabel}>Unpaid</div>
+            <div style={{ ...styles.statValue, color: colors.gold }}>
+              {unpaidCount}
+            </div>
+          </div>
+          <div style={styles.stat}>
+            <div style={styles.statLabel}>VIP Members</div>
+            <div style={{ ...styles.statValue, color: colors.gold }}>
+              {vipCount}
+            </div>
+          </div>
+          <div style={styles.stat}>
+            <div style={styles.statLabel}>Archived</div>
+            <div style={{ ...styles.statValue, color: colors.muted }}>
+              {archivedCount}
+            </div>
           </div>
         </div>
 
         <div style={styles.toolbar}>
-          <div>
-            <h2 style={{ fontSize: 17, margin: 0, fontWeight: 600 }}>
-              {showArchived ? "Archived members" : "Member directory"}
-            </h2>
-            <p style={{ ...styles.muted, margin: "5px 0 0" }}>
-              {filteredMembers.length} member
-              {filteredMembers.length !== 1 ? "s" : ""} displayed
-            </p>
-          </div>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by name, phone or email..."
+            style={{ ...styles.input, maxWidth: 380 }}
+          />
 
-          <div
-            style={{
-              display: "flex",
-              gap: 9,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <input
-              type="search"
-              placeholder="Search by name, phone or email..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              style={styles.search}
-            />
-
-            {canManageMembers && (
-              <button
-                style={{
-                  ...styles.button,
-                  background: "#173b5c",
-                  border: `1px solid ${colors.blue}`,
-                  color: colors.brightBlue,
-                  fontWeight: 600,
-                }}
-                onClick={openAddForm}
-              >
-                + Add Member
-              </button>
-            )}
-          </div>
-        </div>
-
-        {canManageMembers && (
-          <div style={{ marginBottom: 15 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <button
-              onClick={() => {
-                setShowArchived(false);
-                setSearch("");
-              }}
+              onClick={() => setShowArchived(false)}
               style={{
                 ...styles.button,
-                marginRight: 8,
-                background: !showArchived ? "#17314d" : colors.panel,
                 color: !showArchived ? colors.brightBlue : colors.muted,
                 borderColor: !showArchived ? colors.blue : colors.border,
               }}
             >
-              Active members
+              Active
             </button>
-
             <button
-              onClick={() => {
-                setShowArchived(true);
-                setSearch("");
-              }}
+              onClick={() => setShowArchived(true)}
               style={{
                 ...styles.button,
-                background: showArchived ? "#17314d" : colors.panel,
                 color: showArchived ? colors.brightBlue : colors.muted,
                 borderColor: showArchived ? colors.blue : colors.border,
               }}
@@ -841,12 +854,12 @@ export default function MembersPage() {
               Archived ({archivedCount})
             </button>
           </div>
-        )}
+        </div>
 
         {error && (
           <div
             style={{
-              padding: 15,
+              padding: 13,
               marginBottom: 15,
               border: "1px solid #703b43",
               borderRadius: 8,
@@ -1031,6 +1044,17 @@ export default function MembersPage() {
                           </button>
 
                           <button
+                            style={{
+                              ...styles.button,
+                              padding: "7px 10px",
+                              color: colors.gold,
+                            }}
+                            onClick={() => openSkillManager(member)}
+                          >
+                            Skills
+                          </button>
+
+                          <button
                             disabled={actionMemberId === member.id}
                             style={{
                               ...styles.button,
@@ -1096,6 +1120,184 @@ export default function MembersPage() {
             : "You have read-only access to the membership directory. Contact the President or VPI for member modifications."}
         </p>
       </main>
+
+      {selectedSkillsMember && canManageMembers && (
+        <div
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeSkillManager();
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 110,
+            background: "rgba(0, 0, 0, 0.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 18,
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 620,
+              maxHeight: "90vh",
+              overflowY: "auto",
+              background: colors.panel,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 12,
+              padding: 25,
+              boxShadow: "0 20px 70px rgba(0,0,0,0.4)",
+              margin: "auto",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <h2 style={{ fontSize: 20, margin: 0 }}>Manage Skills</h2>
+
+              <button
+                onClick={closeSkillManager}
+                disabled={savingSkills}
+                style={{
+                  ...styles.button,
+                  padding: "5px 10px",
+                  fontSize: 17,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <p style={{ ...styles.muted, marginBottom: 20 }}>
+              Select the skills that belong to{" "}
+              <span style={{ color: colors.brightBlue }}>
+                {selectedSkillsMember.name}
+              </span>
+              .
+            </p>
+
+            {loadingSkills ? (
+              <p style={styles.muted}>Loading assigned skills...</p>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 14,
+                    color: colors.muted,
+                    fontSize: 12,
+                  }}
+                >
+                  <span>Available skills</span>
+                  <span>{selectedSkillIds.length} selected</span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: 9,
+                  }}
+                >
+                  {skillCatalogue.map((skill) => {
+                    const checked = selectedSkillIds.includes(skill.id);
+
+                    return (
+                      <label
+                        key={skill.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 10,
+                          padding: 12,
+                          borderRadius: 8,
+                          border: `1px solid ${
+                            checked ? colors.blue : colors.border
+                          }`,
+                          background: checked ? "#17314d" : "#091a2b",
+                          cursor: "pointer",
+                          fontSize: 12,
+                          color: checked ? colors.brightBlue : colors.text,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSkill(skill.id)}
+                          style={{ accentColor: colors.blue, marginTop: 2 }}
+                        />
+                        <span>{skill.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {skillCatalogue.length === 0 && (
+                  <p style={styles.muted}>
+                    No skills were found in the database.
+                  </p>
+                )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                    marginTop: 22,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSkillIds([])}
+                    disabled={savingSkills}
+                    style={{ ...styles.button, color: colors.red }}
+                  >
+                    Clear all
+                  </button>
+
+                  <div style={{ display: "flex", gap: 9 }}>
+                    <button
+                      type="button"
+                      onClick={closeSkillManager}
+                      disabled={savingSkills}
+                      style={styles.button}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveSkills}
+                      disabled={savingSkills || loadingSkills}
+                      style={{
+                        ...styles.button,
+                        background: "#173b5c",
+                        borderColor: colors.blue,
+                        color: colors.brightBlue,
+                        fontWeight: 600,
+                        minWidth: 125,
+                        opacity: savingSkills ? 0.6 : 1,
+                      }}
+                    >
+                      {savingSkills ? "Saving..." : "Save Skills"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {showForm && canManageMembers && (
         <div
